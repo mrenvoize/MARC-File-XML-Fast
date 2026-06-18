@@ -8,3 +8,6 @@
 \.bak$
 \.tar\.gz$
 ^MANIFEST\.bak$
+^CLAUDE\.md$
+^\.remember/
+^\.claude/
