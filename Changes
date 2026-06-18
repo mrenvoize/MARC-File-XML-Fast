@@ -1,0 +1,7 @@
+Revision history for MARC-File-XML-Fast
+
+0.01      Unreleased
+          - Initial version: decode(), decode_reader(), decode_dom().
+          - Streaming + direct-bless MARCXML decode into MARC::Record objects.
+          - Structural compatibility test for MARC::Field internals
+            (t/02-internals-compat.t), verified against MARC::Record 2.0.7.
