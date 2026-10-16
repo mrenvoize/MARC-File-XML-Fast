@@ -41,7 +41,8 @@ per-field validation C<< MARC::Field->new >> performs.
 The output is byte-identical to C<< MARC::Record->new_from_xml >> for
 well-formed UTF-8 MARCXML (it replicates that constructor's indicator
 coercion). Malformed input causes a croak, so callers can fall back to the
-standard parser.
+standard parser. That includes anything C<< MARC::Field->new >> would die on: a
+datafield with no subfields, or with an absent C<ind1>/C<ind2> attribute.
 
 =head1 WHEN TO USE IT
 
@@ -112,10 +113,18 @@ sub _control_field {
 
 Build a data C<MARC::Field> by direct bless.
 
+Croaks on the two cases C<< MARC::Field->new >> refuses outright -- no
+subfields, or an indicator attribute that is absent -- so that both backends
+fail the same way and callers can fall back to C<< MARC::Record->new_from_xml >>.
+
 =cut
 
 sub _data_field {
     my ( $tag, $ind1, $ind2, $subs ) = @_;
+    my $where = defined $tag ? "field $tag" : 'a datafield';
+    croak("MARC::File::XML::Fast: $where must have at least one subfield") unless @$subs;
+    croak("MARC::File::XML::Fast: $where must have indicators")
+        unless defined $ind1 && defined $ind2;
     return bless {
         _tag              => $tag,
         _ind1             => _ind($ind1),
@@ -132,6 +141,9 @@ sub _data_field {
     my $record = decode_reader( $marcxml );
 
 Streaming (pull-parser) decode; never materializes the full DOM. Fastest path.
+
+If the document is a C<< <collection> >> of several records, only the first is
+decoded, as with C<< MARC::Record->new_from_xml >>.
 
 =cut
 
@@ -183,6 +195,10 @@ sub decode_reader {
                 elsif ( $leaf eq 'ctrl' )   { push @fields, _control_field( $tag, '' ) }
                 elsif ( $leaf eq 'leader' ) { $rec->leader('') }
                 $leaf = undef;
+            } elsif ( $empty && $name eq 'datafield' ) {
+                # A self-closed <datafield/> has no end-element event, so it
+                # must be built (and rejected) here.
+                push @fields, _data_field( $tag, $ind1, $ind2, [] );
             }
         } elsif ( $type == 3 || $type == 4 || $type == 14 ) {
             $text .= $r->value if defined $leaf;
@@ -199,6 +215,10 @@ sub decode_reader {
                 $leaf = undef;
             } elsif ( $name eq 'datafield' ) {
                 push @fields, _data_field( $tag, $ind1, $ind2, [@subs] );
+            } elsif ( $name eq 'record' ) {
+                # Like new_from_xml, take only the first record of a collection.
+                $rv = 0;
+                last;
             }
         }
     }
