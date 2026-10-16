@@ -5,3 +5,9 @@ Revision history for MARC-File-XML-Fast
           - Streaming + direct-bless MARCXML decode into MARC::Record objects.
           - Structural compatibility test for MARC::Field internals
             (t/02-internals-compat.t), verified against MARC::Record 2.0.7.
+          - decode_reader() now decodes only the first record of a
+            <collection>, matching new_from_xml and decode_dom().
+          - A datafield with no subfields (including a self-closed one) or with
+            an absent ind1/ind2 now croaks in both backends, as new_from_xml
+            dies on them; previously decode_reader() silently dropped the
+            self-closed form and decode_dom() built an invalid field.
