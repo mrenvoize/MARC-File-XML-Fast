@@ -1,4 +1,8 @@
 Changes
+bench/bench.pl
+bench/check.pl
+bench/make-corpus.pl
+bench/run.sh
 lib/MARC/File/XML/Fast.pm
 Makefile.PL
 MANIFEST			This list of files
